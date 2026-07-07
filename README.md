@@ -1,0 +1,1 @@
+# Go Template Engine with Dynamic Scoped Variables
