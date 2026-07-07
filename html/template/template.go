@@ -12,8 +12,9 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
-	"text/template"
-	"text/template/parse"
+
+	"github.com/millergarym/gotmpl/text/template"
+	"github.com/millergarym/gotmpl/text/template/parse"
 )
 
 // Template is a specialized Template from "text/template" that produces a safe

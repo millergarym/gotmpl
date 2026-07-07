@@ -11,7 +11,8 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"text/template/parse"
+
+	"github.com/millergarym/gotmpl/text/template/parse"
 )
 
 var multiExecTests = []execTest{

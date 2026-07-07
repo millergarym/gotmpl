@@ -16,7 +16,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"text/template"
+
+	"github.com/millergarym/gotmpl/text/template"
 )
 
 var debug = flag.Bool("debug", false, "show the errors produced by the tests")

@@ -11,7 +11,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"text/template/parse"
+
+	"github.com/millergarym/gotmpl/text/template/parse"
 )
 
 func TestAddParseTreeHTML(t *testing.T) {

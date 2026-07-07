@@ -6,10 +6,11 @@ package template_test
 
 import (
 	"fmt"
-	"html/template"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/millergarym/gotmpl/html/template"
 )
 
 func Example() {

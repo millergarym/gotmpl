@@ -7,10 +7,11 @@ package template_test
 import (
 	"bytes"
 	"encoding/json"
-	. "html/template"
 	"strings"
 	"testing"
-	"text/template/parse"
+
+	. "github.com/millergarym/gotmpl/html/template"
+	"github.com/millergarym/gotmpl/text/template/parse"
 )
 
 func TestTemplateClone(t *testing.T) {

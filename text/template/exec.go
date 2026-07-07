@@ -7,12 +7,13 @@ package template
 import (
 	"errors"
 	"fmt"
-	"internal/fmtsort"
 	"io"
 	"reflect"
 	"runtime"
 	"strings"
-	"text/template/parse"
+
+	"github.com/millergarym/gotmpl/internal/fmtsort"
+	"github.com/millergarym/gotmpl/text/template/parse"
 )
 
 // maxExecDepth specifies the maximum stack depth of templates within

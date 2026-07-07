@@ -8,7 +8,8 @@ import (
 	"maps"
 	"reflect"
 	"sync"
-	"text/template/parse"
+
+	"github.com/millergarym/gotmpl/text/template/parse"
 )
 
 // common holds the information shared by related templates.

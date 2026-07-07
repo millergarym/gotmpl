@@ -7,7 +7,8 @@ package template
 import (
 	"fmt"
 	"slices"
-	"text/template/parse"
+
+	"github.com/millergarym/gotmpl/text/template/parse"
 )
 
 // context describes the state an HTML parser must be in when it reaches the

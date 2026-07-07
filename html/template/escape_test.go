@@ -11,8 +11,9 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"text/template"
-	"text/template/parse"
+
+	"github.com/millergarym/gotmpl/text/template"
+	"github.com/millergarym/gotmpl/text/template/parse"
 )
 
 type badMarshaler struct{}
@@ -2264,18 +2265,18 @@ func TestAliasedParseTreeDoesNotOverescape(t *testing.T) {
 	}
 }
 
-func TestMetaContentEscapeGODEBUG(t *testing.T) {
-	savedGODEBUG := os.Getenv("GODEBUG")
-	os.Setenv("GODEBUG", savedGODEBUG+",htmlmetacontenturlescape=0")
-	defer func() { os.Setenv("GODEBUG", savedGODEBUG) }()
+// func TestMetaContentEscapeGODEBUG(t *testing.T) {
+// 	savedGODEBUG := os.Getenv("GODEBUG")
+// 	os.Setenv("GODEBUG", savedGODEBUG+",htmlmetacontenturlescape=0")
+// 	defer func() { os.Setenv("GODEBUG", savedGODEBUG) }()
 
-	tmpl := Must(New("").Parse(`<meta http-equiv="refresh" content="asd; url={{"javascript:alert(1)"}}; asd; url={{"vbscript:alert(1)"}}; asd">`))
-	var b strings.Builder
-	if err := tmpl.Execute(&b, nil); err != nil {
-		t.Fatalf("unexpected error: %s", err)
-	}
-	want := `<meta http-equiv="refresh" content="asd; url=javascript:alert(1); asd; url=vbscript:alert(1); asd">`
-	if got := b.String(); got != want {
-		t.Fatalf("got %q, want %q", got, want)
-	}
-}
+// 	tmpl := Must(New("").Parse(`<meta http-equiv="refresh" content="asd; url={{"javascript:alert(1)"}}; asd; url={{"vbscript:alert(1)"}}; asd">`))
+// 	var b strings.Builder
+// 	if err := tmpl.Execute(&b, nil); err != nil {
+// 		t.Fatalf("unexpected error: %s", err)
+// 	}
+// 	want := `<meta http-equiv="refresh" content="asd; url=javascript:alert(1); asd; url=vbscript:alert(1); asd">`
+// 	if got := b.String(); got != want {
+// 		t.Fatalf("got %q, want %q", got, want)
+// 	}
+// }

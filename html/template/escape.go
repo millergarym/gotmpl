@@ -8,12 +8,14 @@ import (
 	"bytes"
 	"fmt"
 	"html"
-	"internal/godebug"
+
+	// "internal/godebug"
 	"io"
 	"maps"
 	"regexp"
-	"text/template"
-	"text/template/parse"
+
+	"github.com/millergarym/gotmpl/text/template"
+	"github.com/millergarym/gotmpl/text/template/parse"
 )
 
 // escapeTemplate rewrites the named template, which must be
@@ -164,9 +166,9 @@ func (e *escaper) escape(c context, n parse.Node) context {
 	panic("escaping " + n.String() + " is unimplemented")
 }
 
-var debugAllowActionJSTmpl = godebug.New("jstmpllitinterp")
+// var debugAllowActionJSTmpl = godebug.New("jstmpllitinterp")
 
-var htmlmetacontenturlescape = godebug.New("htmlmetacontenturlescape")
+// var htmlmetacontenturlescape = godebug.New("htmlmetacontenturlescape")
 
 // escapeAction escapes an action template node.
 func (e *escaper) escapeAction(c context, n *parse.ActionNode) context {
@@ -228,15 +230,15 @@ func (e *escaper) escapeAction(c context, n *parse.ActionNode) context {
 	case stateMetaContent:
 		// Handled below in delim check.
 	case stateMetaContentURL:
-		if htmlmetacontenturlescape.Value() != "0" {
-			s = append(s, "_html_template_urlfilter")
-		} else {
-			// We don't have a great place to increment this, since it's hard to
-			// know if we actually escape any urls in _html_template_urlfilter,
-			// since it has no information about what context it is being
-			// executed in etc. This is probably the best we can do.
-			htmlmetacontenturlescape.IncNonDefault()
-		}
+		// if htmlmetacontenturlescape.Value() != "0" {
+		s = append(s, "_html_template_urlfilter")
+		// } else {
+		// 	// We don't have a great place to increment this, since it's hard to
+		// 	// know if we actually escape any urls in _html_template_urlfilter,
+		// 	// since it has no information about what context it is being
+		// 	// executed in etc. This is probably the best we can do.
+		// 	htmlmetacontenturlescape.IncNonDefault()
+		// }
 	case stateJS:
 		s = append(s, "_html_template_jsvalescaper")
 		// A slash after a value starts a div operator.

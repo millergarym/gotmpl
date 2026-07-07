@@ -7,7 +7,6 @@ package fmtsort_test
 import (
 	"cmp"
 	"fmt"
-	"internal/fmtsort"
 	"math"
 	"reflect"
 	"runtime"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"testing"
 	"unsafe"
+
+	"github.com/millergarym/gotmpl/internal/fmtsort"
 )
 
 var compareTests = [][]reflect.Value{
