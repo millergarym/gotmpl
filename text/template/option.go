@@ -22,6 +22,21 @@ type option struct {
 	dynamicScopedVars bool
 }
 
+// An Option modify the behavior of the template engine and parser.
+type Option func(*option)
+
+func WithMissingKeyAction(action missingKeyAction) Option {
+	return func(o *option) {
+		o.missingKey = action
+	}
+}
+
+func WithDynamicScopedVars() Option {
+	return func(o *option) {
+		o.dynamicScopedVars = true
+	}
+}
+
 // Option sets options for the template. Options are described by
 // strings, either a simple string or "key=value". There can be at
 // most one equals sign in an option string. If the option string

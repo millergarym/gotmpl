@@ -73,27 +73,19 @@ func ExampleTemplate_glob() {
 // Here we demonstrate Dynamicaly Scoped Variables
 func ExampleTemplate_dynamicvars() {
 	dir := createTestDir([]templateFile{
-		// T0.tmpl is a plain template file that just invokes T1.
+		// T0.tmpl set a variable $F, which is later used in defined template T2
 		{"T0.tmpl", `{{$F := .}}T0 invokes T1: ({{template "T1"}})`},
-		// T1.tmpl defines a template, T1 that invokes T2.
 		{"T1.tmpl", `{{define "T1"}}T1 invokes T2: ({{template "T2"}}){{end}}`},
-		// T2.tmpl defines a template T2.
 		{"T2.tmpl", `{{define "T2"}}This is T2. F = {{$F}}{{end}}`},
 	})
 	// Clean up after the test; another quirk of running as an example.
 	defer os.RemoveAll(dir)
-	// pattern is the glob pattern used to find all the template files.
 	pattern := filepath.Join(dir, "*.tmpl")
-	tmpl := template.New("root")
-	tmpl.Option("dynamicScopedVars")
-	// Here starts the example proper.
-	// T0.tmpl is the first name matched, so it becomes the starting template,
-	// the value returned by ParseGlob.
-	tmpl, err := tmpl.ParseGlob(pattern)
-	if err != nil {
-		log.Fatalf("template parse: %s", err)
-	}
-	err = tmpl.Lookup("T0.tmpl").Execute(os.Stdout, "hw")
+	// Using New, since the dynamicScopedVars must be called before Parse
+	// tmpl := template.Must(template.New("root").Option("dynamicScopedVars").ParseGlob(pattern)).Lookup("T0.tmpl")
+	// err := tmpl.Lookup("T0.tmpl").Execute(os.Stdout, "hw")
+	tmpl := template.Must(template.ParseGlob(pattern, template.WithDynamicScopedVars()))
+	err := tmpl.Execute(os.Stdout, "hw")
 	if err != nil {
 		log.Fatalf("template execution: %s", err)
 	}

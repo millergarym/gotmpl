@@ -80,6 +80,9 @@ func parseFiles(t *Template, readFile func(string) (string, []byte, error), file
 		if t == nil {
 			t = New(name)
 		}
+		if t.name == "" {
+			t.name = name
+		}
 		if name == t.Name() {
 			tmpl = t
 		} else {
@@ -102,8 +105,8 @@ func parseFiles(t *Template, readFile func(string) (string, []byte, error), file
 //
 // When parsing multiple files with the same name in different directories,
 // the last one mentioned will be the one that results.
-func ParseGlob(pattern string) (*Template, error) {
-	return parseGlob(nil, pattern)
+func ParseGlob(pattern string, opts ...Option) (*Template, error) {
+	return parseGlob(nil, pattern, opts...)
 }
 
 // ParseGlob parses the template definitions in the files identified by the
@@ -120,7 +123,13 @@ func (t *Template) ParseGlob(pattern string) (*Template, error) {
 }
 
 // parseGlob is the implementation of the function and method ParseGlob.
-func parseGlob(t *Template, pattern string) (*Template, error) {
+func parseGlob(t *Template, pattern string, opts ...Option) (*Template, error) {
+	if t == nil {
+		t = New("")
+	}
+	for _, opt := range opts {
+		opt(&t.common.option)
+	}
 	filenames, err := filepath.Glob(pattern)
 	if err != nil {
 		return nil, err

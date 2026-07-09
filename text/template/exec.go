@@ -513,8 +513,17 @@ func (s *state) walkTemplate(dot reflect.Value, t *parse.TemplateNode) {
 	// default - no dynamic scoping: template invocations inherit no variables.
 	newState.vars = []variable{{"$", dot}}
 	if s.tmpl.common.option.dynamicScopedVars {
-		for _, v := range s.vars {
+		// map from name to last index
+		mapVars := make(map[string]int)
+		for i, v := range s.vars {
+			mapVars[v.name] = i
+		}
+		for i, v := range s.vars {
 			if v.name == "$" {
+				continue
+			}
+			// In the case the variable is redefined, only pass on the last var
+			if j := mapVars[v.name]; j != i {
 				continue
 			}
 			newState.vars = append(newState.vars, v)

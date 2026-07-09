@@ -37,11 +37,14 @@ type Template struct {
 }
 
 // New allocates a new, undefined template with the given name.
-func New(name string) *Template {
+func New(name string, opts ...Option) *Template {
 	t := &Template{
 		name: name,
 	}
 	t.init()
+	for _, opt := range opts {
+		opt(&t.common.option)
+	}
 	return t
 }
 

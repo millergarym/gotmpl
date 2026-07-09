@@ -474,3 +474,78 @@ func TestAddToZeroTemplate(t *testing.T) {
 	var tmpl Template
 	tmpl.AddParseTree("x", tree["c"])
 }
+
+// Same a ExampleTemplate_dynamicvars
+func TestDynamicScopedVars001(t *testing.T) {
+	tmpl, err := New("root", WithDynamicScopedVars()).Parse(`{{$F := .}}T0 invokes T1: ({{template "T1"}})
+{{- define "T1"}}T1 invokes T2: ({{template "T2"}}){{end -}}
+{{- define "T2"}}This is T2. F = {{$F}}{{end -}}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sb := &strings.Builder{}
+	tmpl.Execute(sb, "hw")
+	got := sb.String()
+	expected := "T0 invokes T1: (T1 invokes T2: (This is T2. F = hw))"
+	if got != expected {
+		t.Errorf(`
+expected: %q
+received: %q
+`, expected, got)
+	}
+}
+
+// Test override of dynamic scoped variables
+func TestDynamicScopedVars002(t *testing.T) {
+	tmpl, err := New("root", WithDynamicScopedVars()).Parse(`{{$F := .}}T0 invokes T1: ({{template "T1"}})
+{{- define "T1"}}{{$F := "override"}}T1 invokes T2: ({{template "T2"}}){{end -}}
+{{- define "T2"}}This is T2. F = {{$F}}{{end -}}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sb := &strings.Builder{}
+	tmpl.Execute(sb, "hw")
+	got := sb.String()
+	expected := "T0 invokes T1: (T1 invokes T2: (This is T2. F = override))"
+	if got != expected {
+		t.Errorf(`
+expected: %q
+received: %q
+`, expected, got)
+	}
+}
+
+type global struct {
+	To int
+}
+
+func (g *global) More() bool {
+	g.To--
+	return g.To >= 0
+}
+
+func (g global) String() string {
+	return "global"
+}
+
+// Test using a pointer to a struct as the dynamically scoped variable
+func TestDynamicScopedVars003(t *testing.T) {
+	tmpl, err := New("root", WithDynamicScopedVars()).Parse(`{{$F := .}}T0 invokes T1: ({{template "T1"}})
+{{- define "T1"}}{{if $F.More}}{{$F.To}} recursive invoke: ({{template "T1"}}){{else}}done{{end}}{{end -}}
+`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sb := &strings.Builder{}
+	tmpl.Execute(sb, &global{To: 3})
+	got := sb.String()
+	expected := "T0 invokes T1: (2 recursive invoke: (1 recursive invoke: (0 recursive invoke: (done))))"
+	if got != expected {
+		t.Errorf(`
+expected: %q
+received: %q
+`, expected, got)
+	}
+}
