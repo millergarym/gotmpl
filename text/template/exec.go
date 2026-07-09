@@ -510,8 +510,16 @@ func (s *state) walkTemplate(dot reflect.Value, t *parse.TemplateNode) {
 	newState := *s
 	newState.depth++
 	newState.tmpl = tmpl
-	// No dynamic scoping: template invocations inherit no variables.
+	// default - no dynamic scoping: template invocations inherit no variables.
 	newState.vars = []variable{{"$", dot}}
+	if s.tmpl.common.option.dynamicScopedVars {
+		for _, v := range s.vars {
+			if v.name == "$" {
+				continue
+			}
+			newState.vars = append(newState.vars, v)
+		}
+	}
 	newState.walk(dot, tmpl.Root)
 }
 

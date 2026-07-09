@@ -206,7 +206,11 @@ func (t *Template) Lookup(name string) *Template {
 func (t *Template) Parse(text string) (*Template, error) {
 	t.init()
 	t.muFuncs.RLock()
-	trees, err := parse.Parse(t.name, text, t.leftDelim, t.rightDelim, t.parseFuncs, builtins())
+	opts := []parse.Option{parse.WithFuncs(t.parseFuncs, builtins())}
+	if t.option.dynamicScopedVars {
+		opts = append(opts, parse.WithMode(parse.DynScopedVars))
+	}
+	trees, err := parse.ParseWithOptions(t.name, text, t.leftDelim, t.rightDelim, opts...)
 	t.muFuncs.RUnlock()
 	if err != nil {
 		return nil, err

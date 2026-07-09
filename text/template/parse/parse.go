@@ -41,6 +41,7 @@ type Mode uint
 const (
 	ParseComments Mode = 1 << iota // parse comments and add them to AST
 	SkipFuncCheck                  // do not check that functions are defined
+	DynScopedVars = 4              // do not check that variables are defined
 )
 
 // maxStackDepth is the maximum depth permitted for nested
@@ -63,6 +64,7 @@ func (t *Tree) Copy() *Tree {
 		Name:      t.Name,
 		ParseName: t.ParseName,
 		Root:      t.Root.CopyList(),
+		Mode:      t.Mode,
 		text:      t.text,
 	}
 }
@@ -72,11 +74,53 @@ func (t *Tree) Copy() *Tree {
 // given the specified name. If an error is encountered, parsing stops and an
 // empty map is returned with the error.
 func Parse(name, text, leftDelim, rightDelim string, funcs ...map[string]any) (map[string]*Tree, error) {
+	return ParseWithOptions(name, text, leftDelim, rightDelim, WithFuncs(funcs...))
+}
+
+// ParseWithOptions behaves like [Parse] but takes its function maps and
+// parsing [Mode] from the given Options instead of using fixed defaults.
+func ParseWithOptions(name, text, leftDelim, rightDelim string, opts ...Option) (map[string]*Tree, error) {
+	var o options
+	for _, opt := range opts {
+		opt(&o)
+	}
 	treeSet := make(map[string]*Tree)
 	t := New(name)
+	t.Mode = o.mode
+	// t.Mode = t.Mode | DynScopedVars
 	t.text = text
-	_, err := t.Parse(text, leftDelim, rightDelim, treeSet, funcs...)
+	_, err := t.Parse(text, leftDelim, rightDelim, treeSet, o.funcs...)
 	return treeSet, err
+}
+
+// options holds the parsing configuration accumulated from the Options
+// passed to [ParseWithOptions].
+type options struct {
+	funcs []map[string]any
+	mode  Mode
+}
+
+// An Option configures parsing performed by [ParseWithOptions].
+type Option func(*options)
+
+// WithFuncs adds function maps consulted during parsing to check that
+// functions are defined. It may be given more than once; the maps are
+// accumulated.
+func WithFuncs(funcs ...map[string]any) Option {
+	return func(o *options) {
+		o.funcs = append(o.funcs, funcs...)
+	}
+}
+
+// WithMode sets the parser [Mode].
+func WithMode(modes ...Mode) Option {
+	var mode Mode
+	for _, m := range modes {
+		mode = m | mode
+	}
+	return func(o *options) {
+		o.mode = mode
+	}
 }
 
 // next returns the next token.
@@ -839,6 +883,9 @@ func (t *Tree) popVars(n int) {
 // variable is not defined.
 func (t *Tree) useVar(pos Pos, name string) Node {
 	v := t.newVariable(pos, name)
+	if t.Mode&DynScopedVars != 0 {
+		return v
+	}
 	for _, varName := range t.vars {
 		if varName == v.Ident[0] {
 			return v

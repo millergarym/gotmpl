@@ -18,7 +18,8 @@ const (
 )
 
 type option struct {
-	missingKey missingKeyAction
+	missingKey        missingKeyAction
+	dynamicScopedVars bool
 }
 
 // Option sets options for the template. Options are described by
@@ -27,6 +28,9 @@ type option struct {
 // is unrecognized or otherwise invalid, Option panics.
 //
 // Known options:
+//
+// dynamicScopedVars: Specifies that variables (eg {{$X := .}}) is
+// passed to templates (eg {{template "name"}})
 //
 // missingkey: Control the behavior during execution if a map is
 // indexed with a key that is not present in the map.
@@ -50,6 +54,10 @@ func (t *Template) Option(opt ...string) *Template {
 func (t *Template) setOption(opt string) {
 	if opt == "" {
 		panic("empty option string")
+	}
+	if opt == "dynamicScopedVars" {
+		t.option.dynamicScopedVars = true
+		return
 	}
 	// key=value
 	if key, value, ok := strings.Cut(opt, "="); ok {
