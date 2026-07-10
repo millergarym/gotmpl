@@ -96,33 +96,45 @@ func ExampleTemplate_codegen() {
 	// rejects it as an undefined variable. It parses here only because
 	// WithDynamicScopedVars enables parse.DynScopedVars.
 	const source = `
-{{- define "field" -}}
-{{.Name}} {{if .Nested}}{{template "structbody" .Fields}}{{else}}{{if .Pkg}}{{$G.Import .Pkg}}.{{end}}{{.Type}}{{end}}{{if $G.TagFields}} {{.GoTag}}{{end}}
+{{- define "body" -}}
+{{- $G := . -}}
+{{range .Structs -}}
+{{template "typedecl" .}}
+
+{{end -}}
+{{- end -}}
+
+{{- define "typedecl" -}}
+{{.GoDoc}}
+type {{.Name}} {{template "structbody" .Fields}}
 {{- end -}}
 
 {{- define "structbody" -}}
 struct {
-{{range .}}{{template "field" .}}
-{{end}}}
-{{- end -}}
-
-{{- define "typedecl" -}}
-{{with .GoDoc}}{{.}}
-{{end}}type {{.Name}} {{template "structbody" .Fields}}
-{{- end -}}
-
-{{- define "body" -}}
-{{$G := .}}{{range .Structs}}{{template "typedecl" .}}
-
+{{range . -}}
+{{template "field" .}}
 {{end -}}
+}
+{{- end -}}
+
+{{- define "field" -}}
+{{.Name}}{{" "}}
+{{- if .Nested -}}
+{{template "structbody" .Fields}}
+{{- else -}}
+{{if .Pkg}}{{$G.Import .Pkg}}.{{end}}{{.Type}}
+{{- end -}}
+{{if $G.TagFields}} {{.GoTag}}{{end}}
 {{- end -}}
 
 {{- define "header" -}}
 package {{.Package}}
 {{if .Imports}}
 import (
-{{range .Imports}}	"{{.}}"
-{{end}})
+{{range .Imports -}}
+"{{.}}"
+{{end -}}
+)
 {{end}}
 {{- end -}}
 `
