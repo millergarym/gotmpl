@@ -1,18 +1,41 @@
 # gotmpl — Go templates with dynamic scoped variables
 
-`gotmpl` is a fork of the Go standard library's [`text/template`](https://pkg.go.dev/text/template)
+`gotmpl` is a fork/drop-in replacement of the Go standard library's [`text/template`](https://pkg.go.dev/text/template)
 and [`html/template`](https://pkg.go.dev/html/template) packages, copied from the Go
 source at **go1.26.4**. It adds one feature on top of the stock behaviour: an opt-in
 **dynamic scoped variables** mode.
 
+
+[Code-gen example in Go Playground](https://go.dev/play/p/f-fyWd3TTIB)\
+[Simple Example](https://go.dev/play/p/AP6KJ3jf_7j):
 ```go
+package main
+
 import (
-    "github.com/millergarym/gotmpl/text/template"
-    "github.com/millergarym/gotmpl/html/template"
+	"log"
+	"os"
+
+	"github.com/millergarym/gotmpl/text/template"
 )
+
+func main() {
+	tmpl, err := template.New(
+		"root",
+		template.WithDynamicScopedVars(), // <-- opt-in
+	).
+		Parse(`
+{{- $F := . -}}T0 invokes T1: ({{template "T1"}}){{"\n"}}
+{{- define "T1"}}T1 invokes T2: ({{template "T2"}}){{end -}}
+{{- define "T2"}}This is T2. F = {{$F}}{{end -}}
+`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tmpl.Execute(os.Stdout, "hw")
+}
 ```
 
-Everything the standard packages do continues to work unchanged; the new behaviour is
+Everything the standard packages does continues to work unchanged; the new behaviour is
 off by default and must be explicitly enabled.
 
 ## The problem
@@ -85,12 +108,15 @@ without being passed explicitly through the intermediate `T1`.
 - Because the caller's variables stay in scope, recursive templates can carry mutable
   state through a pointer value (see
   [`TestDynamicScopedVars003`](text/template/multi_test.go)):
-
+  Below `More` is a **method** on the passed in the data variable.
+  The invocation of `More`, decrements the `To` field, and return if `g.To >= 0`.
   ```go
   `{{$F := .}}({{template "T1"}})
   {{- define "T1"}}{{if $F.More}}{{$F.To}} ({{template "T1"}}){{else}}done{{end}}{{end -}}`
   // with &global{To: 3} → (2 (1 (0 (done))))
   ```
+
+For complex code-generators methods turn out to be more convenient than functions passed in via the `funcMap`.
 
 ### Parser behaviour
 
