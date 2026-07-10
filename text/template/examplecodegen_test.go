@@ -97,7 +97,7 @@ func ExampleTemplate_codegen() {
 	// WithDynamicScopedVars enables parse.DynScopedVars.
 	const source = `
 {{- define "body" -}}
-{{- $G := . -}}
+{{- $G := . -}}{{- /* create a global variable */ -}}
 {{range .Structs -}}
 {{template "typedecl" .}}
 
@@ -105,7 +105,7 @@ func ExampleTemplate_codegen() {
 {{- end -}}
 
 {{- define "typedecl" -}}
-{{.GoDoc}}
+{{.GoDoc}}{{/* method call*/}}
 type {{.Name}} {{template "structbody" .Fields}}
 {{- end -}}
 
@@ -120,18 +120,18 @@ struct {
 {{- define "field" -}}
 {{.Name}}{{" "}}
 {{- if .Nested -}}
-{{template "structbody" .Fields}}
+{{template "structbody" .Fields}}{{/* recurse */}}
 {{- else -}}
-{{if .Pkg}}{{$G.Import .Pkg}}.{{end}}{{.Type}}
+{{if .Pkg}}{{$G.Import .Pkg}}.{{end}}{{.Type}}{{/* $G.Import method call with side effects */}}
 {{- end -}}
-{{if $G.TagFields}} {{.GoTag}}{{end}}
+{{if $G.TagFields}} {{.GoTag}}{{end}}{{/* global switch */}}
 {{- end -}}
 
 {{- define "header" -}}
 package {{.Package}}
-{{if .Imports}}
+{{if .Imports}}{{/* method call*/}}
 import (
-{{range .Imports -}}
+{{range .Imports -}}{{- /* method call*/ -}}
 "{{.}}"
 {{end -}}
 )
@@ -170,7 +170,10 @@ import (
 
 	// Enable dynamic scoping so $G, bound in "body", is visible to every
 	// template it (transitively) invokes.
-	tmpl := template.Must(template.New("gen", template.WithDynamicScopedVars()).Parse(source))
+	tmpl := template.Must(template.New(
+		"gen",
+		template.WithDynamicScopedVars(), // <-- opt-in to DSV
+	).Parse(source))
 
 	// Render the body first: walking the structs records, as a side effect,
 	// every package referenced by a field into the generator.
