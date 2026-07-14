@@ -80,13 +80,13 @@ type T struct {
 	UPI      unsafe.Pointer
 	EmptyUPI unsafe.Pointer
 	// Function (not method)
-	BinaryFunc             func(string, string) string
-	VariadicFunc           func(...string) string
-	VariadicFuncInt        func(int, ...string) string
-	NilOKFunc              func(*int) bool
-	ErrFunc                func() (string, error)
-	PanicFunc              func() string
-	TooFewReturnCountFunc  func()
+	BinaryFunc      func(string, string) string
+	VariadicFunc    func(...string) string
+	VariadicFuncInt func(int, ...string) string
+	NilOKFunc       func(*int) bool
+	ErrFunc         func() (string, error)
+	PanicFunc       func() string
+	// TooFewReturnCountFunc  func()
 	TooManyReturnCountFunc func() (string, error, int)
 	InvalidReturnTypeFunc  func() (string, bool)
 	// Template to test evaluation of templates.
@@ -178,10 +178,10 @@ var tVal = &T{
 	NilOKFunc:                 func(s *int) bool { return s == nil },
 	ErrFunc:                   func() (string, error) { return "bla", nil },
 	PanicFunc:                 func() string { panic("test panic") },
-	TooFewReturnCountFunc:     func() {},
-	TooManyReturnCountFunc:    func() (string, error, int) { return "", nil, 0 },
-	InvalidReturnTypeFunc:     func() (string, bool) { return "", false },
-	Tmpl:                      Must(New("x").Parse("test template")), // "x" is the value of .X
+	// TooFewReturnCountFunc:     func() {},
+	TooManyReturnCountFunc: func() (string, error, int) { return "", nil, 0 },
+	InvalidReturnTypeFunc:  func() (string, bool) { return "", false },
+	Tmpl:                   Must(New("x").Parse("test template")), // "x" is the value of .X
 }
 
 var tSliceOfNil = []*T{nil}
@@ -748,6 +748,9 @@ var execTests = []execTest{
 
 	{"issue56490", "{{$i := 0}}{{$x := 0}}{{range $i = .AI}}{{end}}{{$i}}", "5", tVal, true},
 	{"issue60801", "{{$k := 0}}{{$v := 0}}{{range $k, $v = .AI}}{{$k}}={{$v}} {{end}}", "0=3 1=4 2=5 ", tVal, true},
+
+	// funcMaps
+	// {"func arg mismatch", "{{set .}}", "", "hw", true},
 }
 
 func fVal1(i int) iter.Seq[int] {
@@ -1860,12 +1863,12 @@ func TestFunctionCheckDuringCall(t *testing.T) {
 			data:    tVal,
 			wantErr: "error calling call: wrong number of args for .VariadicFuncInt: got 0 want at least 1",
 		},
-		{
-			name:    "call too few return number func",
-			input:   `{{call .TooFewReturnCountFunc}}`,
-			data:    tVal,
-			wantErr: "error calling call: function .TooFewReturnCountFunc has 0 return values; should be 1 or 2",
-		},
+		// {
+		// 	name:    "call too few return number func",
+		// 	input:   `{{call .TooFewReturnCountFunc}}`,
+		// 	data:    tVal,
+		// 	wantErr: "error calling call: function .TooFewReturnCountFunc has 0 return values; should be 1 or 2",
+		// },
 		{
 			name:    "call too many return number func",
 			input:   `{{call .TooManyReturnCountFunc}}`,

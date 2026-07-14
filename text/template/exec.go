@@ -266,7 +266,10 @@ func (s *state) walk(dot reflect.Value, node parse.Node) {
 		// Do not pop variables so they persist until next end.
 		// Also, if the action declares variables, don't print the result.
 		val := s.evalPipeline(dot, node.Pipe)
-		if len(node.Pipe.Decl) == 0 {
+		// Also, if the action does not have a return value, don't print the result.
+		hasRetValue := !val.IsValid() || val.Type() != noneType
+		if len(node.Pipe.Decl) == 0 && hasRetValue {
+			// if len(node.Pipe.Decl) == 0 {
 			s.printValue(node, val)
 		}
 	case *parse.BreakNode:
@@ -546,8 +549,14 @@ func (s *state) evalPipeline(dot reflect.Value, pipe *parse.PipeNode) (value ref
 	}
 	s.at(pipe)
 	value = missingVal
-	for _, cmd := range pipe.Cmds {
+	for i, cmd := range pipe.Cmds {
 		value = s.evalCommand(dot, cmd, value) // previous value is this one's final arg.
+		// handle functions with no return args
+		if value.IsValid() && value.Type() == noneType {
+			if i != len(pipe.Cmds)-1 {
+				panic("functions with no return args must be the last in the pipeline")
+			}
+		}
 		// If the object has type interface{}, dig down one level to the thing inside.
 		if value.Kind() == reflect.Interface && value.Type().NumMethod() == 0 {
 			value = value.Elem()
@@ -778,10 +787,13 @@ func (s *state) evalField(dot reflect.Value, fieldName string, node parse.Node, 
 	panic("not reached")
 }
 
+type none struct{}
+
 var (
 	errorType        = reflect.TypeFor[error]()
 	fmtStringerType  = reflect.TypeFor[fmt.Stringer]()
 	reflectValueType = reflect.TypeFor[reflect.Value]()
+	noneType         = reflect.TypeFor[none]()
 )
 
 // evalCall executes a function or method call. If it's a method, fun already has the receiver bound, so
