@@ -750,7 +750,8 @@ var execTests = []execTest{
 	{"issue60801", "{{$k := 0}}{{$v := 0}}{{range $k, $v = .AI}}{{$k}}={{$v}} {{end}}", "0=3 1=4 2=5 ", tVal, true},
 
 	// funcMaps
-	// {"func arg mismatch", "{{set .}}", "", "hw", true},
+	{"func no return", "{{set .}}'{{get}}'", "'hw'", "hw", true},
+	{"func arg mismatch", "{{set}}", "", nil, false},
 }
 
 func fVal1(i int) iter.Seq[int] {
@@ -863,6 +864,7 @@ func mapOfThree() any {
 
 func testExecute(execTests []execTest, template *Template, t *testing.T) {
 	b := new(strings.Builder)
+	var val any
 	funcs := FuncMap{
 		"add":         add,
 		"count":       count,
@@ -879,6 +881,8 @@ func testExecute(execTests []execTest, template *Template, t *testing.T) {
 		"valueString": valueString,
 		"vfunc":       vfunc,
 		"zeroArgs":    zeroArgs,
+		"set":         func(a any) { val = a },
+		"get":         func() any { return val },
 	}
 	for _, test := range execTests {
 		var tmpl *Template
