@@ -733,7 +733,7 @@ func (t *Tree) templateControl() Node {
 
 // TemplateByTypename:
 //
-//	{{tmpl_by_type field prefix suffix}}
+//	{{tmpl_by_type pipeline prefix suffix}}
 //
 // tmpl_by_type keyword is past. The field's value selects the
 // template to invoke: its type name, wrapped in the prefix and suffix

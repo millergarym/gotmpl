@@ -73,8 +73,9 @@ const (
 	NodeComment                    // A comment.
 	NodeBreak                      // A break action.
 	NodeContinue                   // A continue action.
-	//
-	NodeTemplateByTypename // A tmpl_by_type invocation action.
+	// A template invocation action using the prefix + typename + suffix as the template name.
+	// And the object as the dot context
+	NodeTemplateByTypename
 )
 
 // Nodes.
