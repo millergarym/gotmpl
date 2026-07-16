@@ -287,6 +287,8 @@ func (s *state) walk(dot reflect.Value, node parse.Node) {
 		s.walkRange(dot, node)
 	case *parse.TemplateNode:
 		s.walkTemplate(dot, node)
+	case *parse.TemplateByTypenameNode:
+		s.walkTemplateByTypename(dot, node)
 	case *parse.TextNode:
 		if _, err := s.wr.Write(node.Text); err != nil {
 			s.writeError(err)
@@ -547,6 +549,52 @@ func (s *state) walkTemplate(dot reflect.Value, t *parse.TemplateNode) {
 		}
 	}
 	newState.walk(dot, tmpl.Root)
+}
+
+// walkTemplateByTypename invokes the template named after the type of the
+// pipeline's value, wrapped in the node's prefix and suffix. The value
+// becomes dot in the invoked template.
+func (s *state) walkTemplateByTypename(dot reflect.Value, t *parse.TemplateByTypenameNode) {
+	s.at(t)
+	val, _ := indirect(s.evalPipeline(dot, t.Pipe))
+	if !val.IsValid() {
+		s.errorf("tmpl_by_typename of untyped nil")
+	}
+	typeName := val.Type().Name()
+	if typeName == "" {
+		s.errorf("tmpl_by_typename: type %s has no name", val.Type())
+	}
+	name := t.Prefix + typeName + t.Suffix
+	tmpl := s.tmpl.Lookup(name)
+	if tmpl == nil {
+		s.errorf("template %q (for type %s) not defined", name, val.Type())
+	}
+	if s.depth == maxExecDepth {
+		s.errorf("exceeded maximum template depth (%v)", maxExecDepth)
+	}
+	newState := *s
+	newState.depth++
+	newState.tmpl = tmpl
+	// default - no dynamic scoping: template invocations inherit no variables.
+	newState.vars = []variable{{"$", val}}
+	if s.tmpl.common.option.dynamicScopedVars {
+		// map from name to last index
+		mapVars := make(map[string]int)
+		for i, v := range s.vars {
+			mapVars[v.name] = i
+		}
+		for i, v := range s.vars {
+			if v.name == "$" {
+				continue
+			}
+			// In the case the variable is redefined, only pass on the last var
+			if j := mapVars[v.name]; j != i {
+				continue
+			}
+			newState.vars = append(newState.vars, v)
+		}
+	}
+	newState.walk(val, tmpl.Root)
 }
 
 // Eval functions evaluate pipelines, commands, and their elements and extract

@@ -73,6 +73,7 @@ const (
 	NodeComment                    // A comment.
 	NodeBreak                      // A break action.
 	NodeContinue                   // A continue action.
+	NodeTemplateByTypename         // A tmpl_by_typename invocation action.
 )
 
 // Nodes.
@@ -1008,4 +1009,45 @@ func (t *TemplateNode) tree() *Tree {
 
 func (t *TemplateNode) Copy() Node {
 	return t.tr.newTemplate(t.Pos, t.Line, t.Name, t.Pipe.CopyPipe())
+}
+
+// TemplateByTypenameNode represents a {{tmpl_by_typename}} action.
+// The invoked template's name is the type name of the pipeline's value,
+// wrapped in Prefix and Suffix; the value becomes dot in the invocation.
+type TemplateByTypenameNode struct {
+	NodeType
+	Pos
+	tr     *Tree
+	Line   int       // The line number in the input. Deprecated: Kept for compatibility.
+	Prefix string    // Prepended to the type name to form the template name (unquoted).
+	Suffix string    // Appended to the type name to form the template name (unquoted).
+	Pipe   *PipeNode // The command whose value selects the template and becomes dot.
+}
+
+func (t *Tree) newTemplateByTypename(pos Pos, line int, prefix, suffix string, pipe *PipeNode) *TemplateByTypenameNode {
+	return &TemplateByTypenameNode{tr: t, NodeType: NodeTemplateByTypename, Pos: pos, Line: line, Prefix: prefix, Suffix: suffix, Pipe: pipe}
+}
+
+func (t *TemplateByTypenameNode) String() string {
+	var sb strings.Builder
+	t.writeTo(&sb)
+	return sb.String()
+}
+
+func (t *TemplateByTypenameNode) writeTo(sb *strings.Builder) {
+	sb.WriteString("{{tmpl_by_typename ")
+	t.Pipe.writeTo(sb)
+	sb.WriteByte(' ')
+	sb.WriteString(strconv.Quote(t.Prefix))
+	sb.WriteByte(' ')
+	sb.WriteString(strconv.Quote(t.Suffix))
+	sb.WriteString("}}")
+}
+
+func (t *TemplateByTypenameNode) tree() *Tree {
+	return t.tr
+}
+
+func (t *TemplateByTypenameNode) Copy() Node {
+	return t.tr.newTemplateByTypename(t.Pos, t.Line, t.Prefix, t.Suffix, t.Pipe.CopyPipe())
 }
