@@ -558,11 +558,11 @@ func (s *state) walkTemplateByTypename(dot reflect.Value, t *parse.TemplateByTyp
 	s.at(t)
 	val, _ := indirect(s.evalPipeline(dot, t.Pipe))
 	if !val.IsValid() {
-		s.errorf("tmpl_by_typename of untyped nil")
+		s.errorf("tmpl_by_type of untyped nil")
 	}
 	typeName := val.Type().Name()
 	if typeName == "" {
-		s.errorf("tmpl_by_typename: type %s has no name", val.Type())
+		s.errorf("tmpl_by_type: type %s has no name", val.Type())
 	}
 	name := t.Prefix + typeName + t.Suffix
 	tmpl := s.tmpl.Lookup(name)

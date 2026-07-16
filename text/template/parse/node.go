@@ -73,7 +73,8 @@ const (
 	NodeComment                    // A comment.
 	NodeBreak                      // A break action.
 	NodeContinue                   // A continue action.
-	NodeTemplateByTypename         // A tmpl_by_typename invocation action.
+	//
+	NodeTemplateByTypename // A tmpl_by_type invocation action.
 )
 
 // Nodes.
@@ -1011,7 +1012,7 @@ func (t *TemplateNode) Copy() Node {
 	return t.tr.newTemplate(t.Pos, t.Line, t.Name, t.Pipe.CopyPipe())
 }
 
-// TemplateByTypenameNode represents a {{tmpl_by_typename}} action.
+// TemplateByTypenameNode represents a {{tmpl_by_type}} action.
 // The invoked template's name is the type name of the pipeline's value,
 // wrapped in Prefix and Suffix; the value becomes dot in the invocation.
 type TemplateByTypenameNode struct {
@@ -1035,7 +1036,7 @@ func (t *TemplateByTypenameNode) String() string {
 }
 
 func (t *TemplateByTypenameNode) writeTo(sb *strings.Builder) {
-	sb.WriteString("{{tmpl_by_typename ")
+	sb.WriteString("{{tmpl_by_type ")
 	t.Pipe.writeTo(sb)
 	sb.WriteByte(' ')
 	sb.WriteString(strconv.Quote(t.Prefix))

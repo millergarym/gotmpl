@@ -52,10 +52,10 @@ type B struct {
 	F2 string
 }
 
-func ExampleTemplate_tmpl_by_typename() {
+func ExampleTemplate_tmpl_by_type() {
 	const source = `
-{{tmpl_by_typename .Type1 "__" "body"}}
-{{tmpl_by_typename .Type2 "me" "body"}}
+{{tmpl_by_type .Type1 "__" "body"}}
+{{tmpl_by_type .Type2 "me" "body"}}
 {{- define "__Abody" -}}Abody {{.F1}}{{- end -}}
 {{- define "meBbody" -}}Bbody {{.F2}}{{- end -}}
 `

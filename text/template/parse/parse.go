@@ -733,14 +733,14 @@ func (t *Tree) templateControl() Node {
 
 // TemplateByTypename:
 //
-//	{{tmpl_by_typename field prefix suffix}}
+//	{{tmpl_by_type field prefix suffix}}
 //
-// tmpl_by_typename keyword is past. The field's value selects the
+// tmpl_by_type keyword is past. The field's value selects the
 // template to invoke: its type name, wrapped in the prefix and suffix
 // string constants, forms the template name. The value becomes dot in
 // the invoked template.
 func (t *Tree) templateByTypenameControl() Node {
-	const context = "tmpl_by_typename clause"
+	const context = "tmpl_by_type clause"
 	token := t.peekNonSpace()
 	pipe := t.newPipeline(token.pos, token.line, nil)
 	cmd := t.newCommand(token.pos)
