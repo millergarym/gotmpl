@@ -73,6 +73,8 @@ const (
 	itemRange    // range keyword
 	itemTemplate // template keyword
 	itemWith     // with keyword
+	//
+	itemTemplateByTypename // tmpl_by_typename keyword
 )
 
 var key = map[string]itemType{
@@ -88,6 +90,8 @@ var key = map[string]itemType{
 	"nil":      itemNil,
 	"template": itemTemplate,
 	"with":     itemWith,
+	// {{tmpl_by_typename <field> <prefix> <suffix>}}
+	"tmpl_by_typename": itemTemplateByTypename,
 }
 
 const eof = -1

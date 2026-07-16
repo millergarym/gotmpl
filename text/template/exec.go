@@ -501,9 +501,23 @@ func (s *state) walkRange(dot reflect.Value, r *parse.RangeNode) {
 
 func (s *state) walkTemplate(dot reflect.Value, t *parse.TemplateNode) {
 	s.at(t)
-	tmpl := s.tmpl.Lookup(t.Name)
+	name := t.Name
+	if strings.HasPrefix(name, "$") {
+		found := false
+		for _, v := range s.vars {
+			if v.name == name {
+				name = fmt.Sprintf("%v", v.value.Interface())
+				found = true
+				break
+			}
+		}
+		if !found {
+			s.errorf("variable name found for template %q", t.Name)
+		}
+	}
+	tmpl := s.tmpl.Lookup(name)
 	if tmpl == nil {
-		s.errorf("template %q not defined", t.Name)
+		s.errorf("template %q not defined", name)
 	}
 	if s.depth == maxExecDepth {
 		s.errorf("exceeded maximum template depth (%v)", maxExecDepth)

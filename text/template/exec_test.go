@@ -751,7 +751,7 @@ var execTests = []execTest{
 
 	// funcMaps
 	{"func no return", "{{set .}}'{{get}}'", "'hw'", "hw", true},
-	{"func arg mismatch", "{{set}}", "", nil, false},
+	{"func arg mismatch", "{{set}}", "", "hw", false},
 }
 
 func fVal1(i int) iter.Seq[int] {

@@ -255,6 +255,8 @@ func (t *Tree) unexpected(token item, context string) {
 		}
 		t.errorf("%s%s", token, extra)
 	}
+	// panic("")
+	// panic(fmt.Errorf("unexpected %s in %s", token, context))
 	t.errorf("unexpected %s in %s", token, context)
 }
 
@@ -734,6 +736,9 @@ func (t *Tree) parseTemplateName(token item, context string) (name string) {
 			t.error(err)
 		}
 		name = s
+	case itemVariable:
+		// fmt.Fprintf(os.Stderr, "token: %s\n", token.val)
+		return token.val
 	default:
 		t.unexpected(token, context)
 	}
