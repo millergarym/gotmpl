@@ -1,4 +1,4 @@
-# gotmpl — Go templates with dynamic scoped variables
+# gotmpl — Go templates with dynamic dispatch & dynamic scoped variables
 
 `gotmpl` is a fork/drop-in replacement of the Go standard library's [`text/template`](https://pkg.go.dev/text/template)
 and [`html/template`](https://pkg.go.dev/html/template) packages, copied from the Go
