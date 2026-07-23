@@ -99,6 +99,8 @@ func addFuncs(out, in FuncMap) {
 func goodFunc(name string, typ reflect.Type) error {
 	// We allow functions with 1 result or 2 results where the second is an error.
 	switch numOut := typ.NumOut(); {
+	case numOut == 0:
+		return nil
 	case numOut == 1:
 		return nil
 	case numOut == 2 && typ.Out(1) == errorType:
@@ -364,6 +366,9 @@ func safeCall(fun reflect.Value, args []reflect.Value) (val reflect.Value, err e
 		}
 	}()
 	ret := fun.Call(args)
+	if len(ret) == 0 {
+		return reflect.ValueOf(none{}), nil
+	}
 	if len(ret) == 2 && !ret[1].IsNil() {
 		return ret[0], ret[1].Interface().(error)
 	}

@@ -266,7 +266,10 @@ func (s *state) walk(dot reflect.Value, node parse.Node) {
 		// Do not pop variables so they persist until next end.
 		// Also, if the action declares variables, don't print the result.
 		val := s.evalPipeline(dot, node.Pipe)
-		if len(node.Pipe.Decl) == 0 {
+		// Also, if the action does not have a return value, don't print the result.
+		hasRetValue := !val.IsValid() || val.Type() != noneType
+		if len(node.Pipe.Decl) == 0 && hasRetValue {
+			// if len(node.Pipe.Decl) == 0 {
 			s.printValue(node, val)
 		}
 	case *parse.BreakNode:
@@ -284,6 +287,8 @@ func (s *state) walk(dot reflect.Value, node parse.Node) {
 		s.walkRange(dot, node)
 	case *parse.TemplateNode:
 		s.walkTemplate(dot, node)
+	case *parse.TemplateByTypenameNode:
+		s.walkTemplateByTypename(dot, node)
 	case *parse.TextNode:
 		if _, err := s.wr.Write(node.Text); err != nil {
 			s.writeError(err)
@@ -498,9 +503,23 @@ func (s *state) walkRange(dot reflect.Value, r *parse.RangeNode) {
 
 func (s *state) walkTemplate(dot reflect.Value, t *parse.TemplateNode) {
 	s.at(t)
-	tmpl := s.tmpl.Lookup(t.Name)
+	name := t.Name
+	if strings.HasPrefix(name, "$") {
+		found := false
+		for _, v := range s.vars {
+			if v.name == name {
+				name = fmt.Sprintf("%v", v.value.Interface())
+				found = true
+				break
+			}
+		}
+		if !found {
+			s.errorf("variable name found for template %q", t.Name)
+		}
+	}
+	tmpl := s.tmpl.Lookup(name)
 	if tmpl == nil {
-		s.errorf("template %q not defined", t.Name)
+		s.errorf("template %q not defined", name)
 	}
 	if s.depth == maxExecDepth {
 		s.errorf("exceeded maximum template depth (%v)", maxExecDepth)
@@ -532,6 +551,52 @@ func (s *state) walkTemplate(dot reflect.Value, t *parse.TemplateNode) {
 	newState.walk(dot, tmpl.Root)
 }
 
+// walkTemplateByTypename invokes the template named after the type of the
+// pipeline's value, wrapped in the node's prefix and suffix. The value
+// becomes dot in the invoked template.
+func (s *state) walkTemplateByTypename(dot reflect.Value, t *parse.TemplateByTypenameNode) {
+	s.at(t)
+	val, _ := indirect(s.evalPipeline(dot, t.Pipe))
+	if !val.IsValid() {
+		s.errorf("tmpl_by_type of untyped nil")
+	}
+	typeName := val.Type().Name()
+	if typeName == "" {
+		s.errorf("tmpl_by_type: type %s has no name", val.Type())
+	}
+	name := t.Prefix + typeName + t.Suffix
+	tmpl := s.tmpl.Lookup(name)
+	if tmpl == nil {
+		s.errorf("template %q (for type %s) not defined", name, val.Type())
+	}
+	if s.depth == maxExecDepth {
+		s.errorf("exceeded maximum template depth (%v)", maxExecDepth)
+	}
+	newState := *s
+	newState.depth++
+	newState.tmpl = tmpl
+	// default - no dynamic scoping: template invocations inherit no variables.
+	newState.vars = []variable{{"$", val}}
+	if s.tmpl.common.option.dynamicScopedVars {
+		// map from name to last index
+		mapVars := make(map[string]int)
+		for i, v := range s.vars {
+			mapVars[v.name] = i
+		}
+		for i, v := range s.vars {
+			if v.name == "$" {
+				continue
+			}
+			// In the case the variable is redefined, only pass on the last var
+			if j := mapVars[v.name]; j != i {
+				continue
+			}
+			newState.vars = append(newState.vars, v)
+		}
+	}
+	newState.walk(val, tmpl.Root)
+}
+
 // Eval functions evaluate pipelines, commands, and their elements and extract
 // values from the data structure by examining fields, calling methods, and so on.
 // The printing of those values happens only through walk functions.
@@ -546,8 +611,14 @@ func (s *state) evalPipeline(dot reflect.Value, pipe *parse.PipeNode) (value ref
 	}
 	s.at(pipe)
 	value = missingVal
-	for _, cmd := range pipe.Cmds {
+	for i, cmd := range pipe.Cmds {
 		value = s.evalCommand(dot, cmd, value) // previous value is this one's final arg.
+		// handle functions with no return args
+		if value.IsValid() && value.Type() == noneType {
+			if i != len(pipe.Cmds)-1 {
+				panic("functions with no return args must be the last in the pipeline")
+			}
+		}
 		// If the object has type interface{}, dig down one level to the thing inside.
 		if value.Kind() == reflect.Interface && value.Type().NumMethod() == 0 {
 			value = value.Elem()
@@ -778,10 +849,13 @@ func (s *state) evalField(dot reflect.Value, fieldName string, node parse.Node, 
 	panic("not reached")
 }
 
+type none struct{}
+
 var (
 	errorType        = reflect.TypeFor[error]()
 	fmtStringerType  = reflect.TypeFor[fmt.Stringer]()
 	reflectValueType = reflect.TypeFor[reflect.Value]()
+	noneType         = reflect.TypeFor[none]()
 )
 
 // evalCall executes a function or method call. If it's a method, fun already has the receiver bound, so

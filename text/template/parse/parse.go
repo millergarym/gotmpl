@@ -255,6 +255,8 @@ func (t *Tree) unexpected(token item, context string) {
 		}
 		t.errorf("%s%s", token, extra)
 	}
+	// panic("")
+	// panic(fmt.Errorf("unexpected %s in %s", token, context))
 	t.errorf("unexpected %s in %s", token, context)
 }
 
@@ -341,6 +343,7 @@ func IsEmptyTree(n Node) bool {
 		return true
 	case *RangeNode:
 	case *TemplateNode:
+	case *TemplateByTypenameNode:
 	case *TextNode:
 		return len(bytes.TrimSpace(n.Text)) == 0
 	case *WithNode:
@@ -466,6 +469,8 @@ func (t *Tree) action() (n Node) {
 		return t.rangeControl()
 	case itemTemplate:
 		return t.templateControl()
+	case itemTemplateByTypename:
+		return t.templateByTypenameControl()
 	case itemWith:
 		return t.withControl()
 	}
@@ -726,6 +731,49 @@ func (t *Tree) templateControl() Node {
 	return t.newTemplate(token.pos, token.line, name, pipe)
 }
 
+// TemplateByTypename:
+//
+//	{{tmpl_by_type pipeline prefix suffix}}
+//
+// tmpl_by_type keyword is past. The field's value selects the
+// template to invoke: its type name, wrapped in the prefix and suffix
+// string constants, forms the template name. The value becomes dot in
+// the invoked template.
+func (t *Tree) templateByTypenameControl() Node {
+	const context = "tmpl_by_type clause"
+	token := t.peekNonSpace()
+	pipe := t.newPipeline(token.pos, token.line, nil)
+	cmd := t.newCommand(token.pos)
+	operand := t.operand()
+	if operand == nil {
+		t.unexpected(t.next(), context)
+	}
+	cmd.append(operand)
+	pipe.append(cmd)
+	prefix := t.parseQuoted(t.nextNonSpace(), context)
+	suffix := t.parseQuoted(t.nextNonSpace(), context)
+	t.expect(itemRightDelim, context)
+	return t.newTemplateByTypename(token.pos, token.line, prefix, suffix, pipe)
+}
+
+// parseQuoted returns the value of a quoted string token, failing the
+// parse if the token is not a string.
+func (t *Tree) parseQuoted(token item, context string) string {
+	var (
+		s   string
+		err error
+	)
+	switch token.typ {
+	case itemString, itemRawString:
+		if s, err = strconv.Unquote(token.val); err != nil {
+			t.error(err)
+		}
+	default:
+		t.unexpected(token, context)
+	}
+	return s
+}
+
 func (t *Tree) parseTemplateName(token item, context string) (name string) {
 	switch token.typ {
 	case itemString, itemRawString:
@@ -734,6 +782,9 @@ func (t *Tree) parseTemplateName(token item, context string) (name string) {
 			t.error(err)
 		}
 		name = s
+	case itemVariable:
+		// fmt.Fprintf(os.Stderr, "token: %s\n", token.val)
+		return token.val
 	default:
 		t.unexpected(token, context)
 	}

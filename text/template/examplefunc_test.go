@@ -122,3 +122,54 @@ func ExampleTemplate_if() {
 	// Output:
 	// "Good Night, Gopher" is a great book.
 }
+
+// This example demonstrates how to use funcs with captured variables.
+func ExampleTemplate_curry_val() {
+	var val any
+	tmpl, err := template.New(
+		"root",
+		template.WithDynamicScopedVars(), // <-- opt-in
+	).Funcs(template.FuncMap{
+		"set": func(a any) { val = a },
+		"get": func() any { return val },
+	}).Parse(`
+{{- set . -}}T0 invokes T1: ({{template "T1"}}){{"\n"}}
+{{- define "T1"}}T1 invokes T2: ({{template "T2"}}){{end -}}
+{{- define "T2"}}This is T2. F = {{get}}{{end -}}
+`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tmpl.Execute(os.Stdout, "hw")
+	// Output:
+	// T0 invokes T1: (T1 invokes T2: (This is T2. F = hw))
+}
+
+type X struct {
+	val any
+}
+
+func (x *X) Set(a any) { x.val = a }
+func (x *X) Get() any  { return x.val }
+
+// This example demonstrates how to use funcs with curried receiver.
+func ExampleTemplate_curry_receiver() {
+	x := &X{}
+	tmpl, err := template.New(
+		"root",
+		template.WithDynamicScopedVars(), // <-- opt-in
+	).Funcs(template.FuncMap{
+		"set": x.Set,
+		"get": x.Get,
+	}).Parse(`
+{{- set . -}}T0 invokes T1: ({{template "T1"}}){{"\n"}}
+{{- define "T1"}}T1 invokes T2: ({{template "T2"}}){{end -}}
+{{- define "T2"}}This is T2. F = {{get}}{{end -}}
+`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tmpl.Execute(os.Stdout, "hw")
+	// Output:
+	// T0 invokes T1: (T1 invokes T2: (This is T2. F = hw))
+}
